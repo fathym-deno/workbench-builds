@@ -1,0 +1,49 @@
+name: build-workbench
+on:
+  workflow_dispatch:
+    inputs:
+      source_repo:
+        description: 'owner/repo or full clone URL of the workbench repo'
+        required: true
+      ref:
+        description: 'commit sha (already resolved by the SOP)'
+        required: true
+      image_tag:
+        description: 'wb-{APISlug}:{sourceHash}'
+        required: true
+      dockerfile:
+        description: 'Resolved Dockerfile contents (per-mode -> workbench -> OI default)'
+        required: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout workbench repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.source_repo }}
+          ref: ${{ inputs.ref }}
+
+      - name: Write resolved Dockerfile
+        run: |
+          printf '%s' "${{ inputs.dockerfile }}" > ./Dockerfile.oi
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build + push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile.oi
+          push: true
+          tags: ghcr.io/fathym-deno/${{ inputs.image_tag }}
