@@ -30,8 +30,15 @@ jobs:
           ref: ${{ inputs.ref }}
 
       - name: Write resolved Dockerfile
+        # Route the Dockerfile through an env var so its raw content
+        # (including any `"`, `$`, backticks) survives yaml + shell parsing
+        # verbatim. Direct `${{ inputs.dockerfile }}` in the run script
+        # gets substituted into the shell text and any inner `"` breaks
+        # out of the surrounding shell string.
+        env:
+          DOCKERFILE_CONTENT: ${{ inputs.dockerfile }}
         run: |
-          printf '%s' "${{ inputs.dockerfile }}" > ./Dockerfile.oi
+          printf '%s' "$DOCKERFILE_CONTENT" > ./Dockerfile.oi
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
