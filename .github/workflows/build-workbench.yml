@@ -24,10 +24,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout workbench repo
+        # Use WORKBENCH_CHECKOUT_TOKEN when set (fine-grained PAT scoped to
+        # the private workbench source repos, e.g. fathym-deno/fathym-dev-space).
+        # Falls back to the workflow's default GITHUB_TOKEN for public repos.
         uses: actions/checkout@v4
         with:
           repository: ${{ inputs.source_repo }}
           ref: ${{ inputs.ref }}
+          token: ${{ secrets.WORKBENCH_CHECKOUT_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Write resolved Dockerfile
         # Route the Dockerfile through an env var so its raw content
